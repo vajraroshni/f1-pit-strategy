@@ -24,26 +24,20 @@ print("F1 PIT STOP STRATEGY OPTIMIZER (MULTI-RACE, EXTENDED)")
 print("Vajra Roshni Akurathi | 2210110779")
 print("=" * 70)
 
-# ----------------------------------------------------------------------
 # 1. SETUP
-# ----------------------------------------------------------------------
 cache_dir = "./f1_cache"
 os.makedirs(cache_dir, exist_ok=True)
 fastf1.Cache.enable_cache(cache_dir)
 sns.set_style("whitegrid")
 
-# ----------------------------------------------------------------------
 # 2. BUILD LIST OF 2024 RACES
-# ----------------------------------------------------------------------
 print("\nBuilding 2024 race list...")
 schedule_2024 = fastf1.get_event_schedule(2024)
 gp_names = schedule_2024["EventName"].tolist()
 print(f"Found {len(gp_names)} events in 2024:")
 print(gp_names)
 
-# ----------------------------------------------------------------------
 # 3. LOAD ALL 2024 RACE SESSIONS
-# ----------------------------------------------------------------------
 print("\nLoading 2024 race data (first run can take time, later uses cache)...")
 
 all_laps = []
@@ -55,7 +49,7 @@ for gp in tqdm(gp_names, desc="Races"):
         race = fastf1.get_session(2024, gp, "R")
         race.load()
 
-        # store full laps for extra features later
+        # for extra features later
         laps_gp = race.laps.copy()
         laps_gp["EventName"] = gp
         all_laps.append(laps_gp)
@@ -78,12 +72,10 @@ pit_stops = pd.concat(all_pits, ignore_index=True)
 
 print(f"\nLoaded {len(laps)} laps, {len(pit_stops)} pit stops, {len(results)} driver results")
 
-# ----------------------------------------------------------------------
 # 4. FEATURE ENGINEERING
-# ----------------------------------------------------------------------
 print("\nEngineering features ...")
 
-# basic: number of stops per driver (per season sample)
+# basic: number of stops per driver
 pit_counts = (
     pit_stops.groupby("Driver")["LapNumber"]
     .count()
@@ -123,9 +115,7 @@ print("\nSample of engineered dataset:")
 print(df[["Abbreviation", "Position", "num_stops", "avg_pit_lap",
           "laps_completed", "top5"]].head(10))
 
-# ----------------------------------------------------------------------
 # 5. EDA
-# ----------------------------------------------------------------------
 print("\nCreating EDA plot...")
 
 plt.figure(figsize=(12, 8))
@@ -174,9 +164,8 @@ plt.savefig("eda_extended.png", dpi=300, bbox_inches="tight")
 print("Saved EDA figure as eda_extended.png")
 plt.close()
 
-# ----------------------------------------------------------------------
-# 6. STATISTICAL TESTS (still on num_stops for clarity)
-# ----------------------------------------------------------------------
+
+# 6. STATISTICAL TESTS (num_stops for clarity)
 print("\nStatistical analysis (using num_stops groups):")
 
 groups = [g["Position"].dropna() for _, g in df.groupby("num_stops")]
@@ -196,9 +185,7 @@ else:
     p_ttest = None
     print("  T-test: not enough data for two groups.")
 
-# ----------------------------------------------------------------------
 # 7. MACHINE LEARNING – COMPARE SIMPLE VS EXTENDED FEATURES
-# ----------------------------------------------------------------------
 print("\nTraining machine learning models...")
 
 # SIMPLE: only num_stops
@@ -232,9 +219,7 @@ def train_and_report(X, label):
 r2_simple, f1_simple = train_and_report(X_simple, "SIMPLE (num_stops only)")
 r2_ext, f1_ext = train_and_report(X_extended, "EXTENDED (num_stops + avg_pit_lap + laps_completed)")
 
-# ----------------------------------------------------------------------
 # 8. SIMPLE STRATEGY OPTIMISATION
-# ----------------------------------------------------------------------
 print("\nRunning simple pit stop optimization toy model...")
 
 def simulate_strategy(num_stops_optimal, baseline_time=5400.0, stop_time_loss=25.0):
@@ -251,9 +236,7 @@ print(f"  Baseline strategy: 2 stops -> 5400.0 s (assumed)")
 print(f"  Hypothetical optimal: {optimal_stops} stop -> {opt_time:.1f} s")
 print(f"  Estimated time gain: {gain:.1f} s")
 
-# ----------------------------------------------------------------------
 # 9. SUMMARY
-# ----------------------------------------------------------------------
 print("\n" + "=" * 70)
 print("SUMMARY")
 print("=" * 70)
